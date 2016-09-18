@@ -4,30 +4,23 @@ import random
 #
 
 def mk_lens(p, g):
-    def l(f, d):
-        return f(p, g, d)
-    return l
+    return lambda f, d: f (p, g, d)
 
 def get(l, d):
-    def getter(_, g, d):
-        return g(d)
-    return l(getter, d)
+    return l(lambda _, g, d2: g(d2), d)
 
 def put(l, val, d):
-    def putter(p, _, d):
-        return p(d, val)
-    return l(putter, d)
+    return l(lambda p, _, d2: p(d2, val), d)
 
 def over(l, modify, d):
-    val = get(l, d)
-    return put(l, modify(val), d)
+    return put(l, modify(get(l, d)), d)
 
 def lens(key):
-    def update(d, val):
+    def put_by_key(d, val):
         d2 = copy.copy(d)
         d2[key] = val
         return d2
-    return mk_lens(update, lambda d: d[key])
+    return mk_lens(put_by_key, lambda d: d[key])
 
 
 #
@@ -47,8 +40,8 @@ class Logger:
     def damage(self, a_ty, d_ty, d_damage):
         self.console.log(damage_message(a_ty, d_ty, d_damage))
 
-    def health(self, d_ty, d_health):
-        self.console.log(health_message(d_ty, d_health))
+    def health(self, ty, health):
+        self.console.log(health_message(ty, health))
 
 def attack_message(a_ty, d_ty):
     return a_ty + ' attacks ' + d_ty + '.'
