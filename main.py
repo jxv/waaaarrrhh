@@ -67,19 +67,18 @@ class Battle:
     def attack(self, a, d):
         a_ty = a['ty']
         d_ty = d['ty']
-        d_health = d['health']
         self.logger.attack(a_ty, d_ty)
         def hurt(health):
-            damage = calc_damage(a_ty, d_ty, d_health)
+            damage, health2 = calc_damage_and_health(a_ty, d_ty, health)
             self.logger.damage(a_ty, d_ty, damage)
-            health2 = health - damage
             self.logger.health(d_ty, health2)
             return health2
         return over(lens('health'), hurt, d)
 
-def calc_damage(a_ty, d_ty, d_health):
+def calc_damage_and_health(a_ty, d_ty, d_health):
     max_damage = attack_table[a_ty][d_ty]
-    return d_health if max_damage > d_health else max_damage
+    damage = d_health if max_damage > d_health else max_damage
+    return damage, d_health - damage
 
 attack_table = {
     'infant': {
