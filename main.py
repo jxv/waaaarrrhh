@@ -1,5 +1,6 @@
 import copy
 import random
+import functools
 
 #
 
@@ -15,19 +16,33 @@ def put(l, val, d):
 def over(l, modify, d):
     return put(l, modify(get(l, d)), d)
 
-def lens(key):
-    def put_by_key(d, val):
+def assoc(key):
+    def put_as_copy(d, val):
         d2 = copy.copy(d)
         d2[key] = val
         return d2
-    return mk_lens(put_by_key, lambda d: d[key])
+    return put_as_copy
 
+def lens(key):
+    return mk_lens(assoc(key), lambda d: d[key])
+
+def lens_path(keys):
+    def get_by_path(d):
+        return functools.reduce(lambda val, key: val[key], keys, d)
+    def assoc_path(d, val):
+       # def assoc2(k0, k1):
+       #    return lambda d, val: assoc(k0)(d, assoc(k1)(d[k0], val))
+       raise 'not implemented: lens_path.assoc_path'
+    return mk_lens(assoc_path, get_by_path)
 
 #
 
 class Console:
     def log(self, msg):
         print(msg)
+
+    def newline(self):
+        print('')
 
 
 class Logger:
@@ -120,13 +135,13 @@ def main(system):
     ]
 
     console.log('this is waaaarrrhh!!!11')
-    console.log('')
+    console.newline()
 
     order = { 'atk': 0, 'def': 1 }
     while units[order['atk']]['health'] > 0 and units[order['def']]['health'] > 0:
-        order['atk'], order['def'] = order['def'], order['atk']
         units[order['def']] = battle.attack(units[order['atk']], units[order['def']])
-        console.log('')
+        console.newline()
+        order['atk'], order['def'] = order['def'], order['atk']
 
 if __name__ == "__main__":
     main(wire())
