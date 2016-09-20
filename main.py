@@ -30,9 +30,16 @@ def lens_path(keys):
     def get_by_path(d):
         return functools.reduce(lambda val, key: val[key], keys, d)
     def assoc_path(d, val):
-       # def assoc2(k0, k1):
-       #    return lambda d, val: assoc(k0)(d, assoc(k1)(d[k0], val))
-       raise 'not implemented: lens_path.assoc_path'
+        nests = []
+        d2 = d
+        for key in keys:
+            nests.append((assoc(key), d2))
+            d2 = d2[key]
+        nests.reverse()
+        val2 = val
+        for asc, nest_d in nests:
+            val2 = asc(nest_d, val2)
+        return val2
     return mk_lens(assoc_path, get_by_path)
 
 #
