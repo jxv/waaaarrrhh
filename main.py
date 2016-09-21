@@ -4,43 +4,46 @@ import functools
 
 #
 
-def mk_lens(p, g):
-    return lambda f, d: f (p, g, d)
+class Lens:
+    def __init__(self, getter, putter):
+        self.getter = getter
+        self.putter = putter
 
-def get(l, d):
-    return l(lambda _, g, d2: g(d2), d)
+    def __rshift__(self, second):
+        def getter(o):
+            return second.getter(self.getter(o))
+        def putter(o, v):
+            return self.putter(o, second.putter(self.getter(o), v))
+        return Lens(getter, putter)
 
-def put(l, val, d):
-    return l(lambda p, _, d2: p(d2, val), d)
+    def __lshift__(self, second):
+        return second >> self
 
-def over(l, modify, d):
-    return put(l, modify(get(l, d)), d)
+def get(l, o):
+    return l.getter(o)
 
-def assoc(key):
-    def put_as_copy(d, val):
-        d2 = copy.copy(d)
-        d2[key] = val
-        return d2
-    return put_as_copy
+def put(l, o, v):
+    return l.putter(o, v)
 
-def lens(key):
-    return mk_lens(assoc(key), lambda d: d[key])
+def over(l, o, f):
+    return l.putter(o, f(l.getter(o)))
 
-def lens_path(keys):
-    def get_by_path(d):
-        return functools.reduce(lambda val, key: val[key], keys, d)
-    def assoc_path(d, val):
-        nests = []
-        d2 = d
-        for key in keys:
-            nests.append((assoc(key), d2))
-            d2 = d2[key]
-        nests.reverse()
-        val2 = val
-        for asc, nest_d in nests:
-            val2 = asc(nest_d, val2)
-        return val2
-    return mk_lens(assoc_path, get_by_path)
+def key(k):
+    def getter(o):
+        return o[k]
+    def putter(o, v):
+        r = copy.copy(o)
+        r[k] = v
+        return r
+    return Lens(getter, putter)
+
+def keys(ks):
+    l = functools.reduce(lambda a, b: a >> b, map(key, ks), Lens(lambda o: o, lambda _, v: v))
+    def getter(o):
+        return get(l, o)
+    def putter(o, v):
+        return put(l, o, v)
+    return Lens(getter, putter)
 
 #
 
@@ -88,7 +91,7 @@ class Battle:
             self.logger.damage(a_ty, d_ty, damage)
             self.logger.health(d_ty, health2)
             return health2
-        return over(lens('health'), hurt, d)
+        return over(key('health'), d, hurt)
 
 def calc_damage_and_health(a_ty, d_ty, d_health):
     max_damage = attack_table[a_ty][d_ty]
@@ -112,7 +115,6 @@ attack_table = {
         'jeeper': 2,
     },
 }
-
 
 # !
 
